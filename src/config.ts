@@ -1,0 +1,33 @@
+// src/config.ts
+export const PERSON = {
+  name: 'Natalie Baranova',
+  nickname: 'Natka',
+  title: "Natka’s Birthday Quest",
+  images: [
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896330/IMG_5489_1_rwxeje.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896329/IMG_5413_1_ccziz1.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896327/IMG_8156_1_rdkwr4.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896329/IMG_5512_1_x19mwf.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896327/IMG_4154_2_1_l8hamj.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896329/IMG_6872_1_rvid5i.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896326/IMG_5911_1_erpklg.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896327/IMG_3228_1_flg3cf.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896326/IMG_3325_2_1_ga5msf.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896325/IMG_7197_1_b6wxcw.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896325/IMG_7849_1_mrhbwf.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756896324/nat_ble3eb.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756897821/profile-image_gxd1tq.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899458/IMG_3536_1-min_tgnnd6.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899458/IMG_2920_1-min_l3r0ww.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899456/IMG_4178_2_1-min_c55rvt.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899456/IMG_2627_1-min_je3jfs.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899455/IMG_2895_2_1-min_ewgo1t.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899454/7f891593-88e2-4f5c-87b4-669301593869_1-min_jg5a3k.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899454/IMG_8151_1-min_bwswpm.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899453/20250627_172253_F5A563_1-min_qiam0k.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899452/56f86152-ab4d-4bec-ba3f-4576f5fa931a_1-min_z0rfa5.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899451/IMG_1201_1-min_bkzrcd.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899451/IMG_3369_2_1-min_diaxvw.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899449/20250626_203401_F9AB90_1-min_uaoc5u.png"
+  ],
+}
