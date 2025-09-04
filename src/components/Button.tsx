@@ -1,20 +1,12 @@
 import React from 'react'
-import { motion, type MotionProps } from 'framer-motion'
+import { motion } from 'framer-motion'
 
-// Remove React's drag handlers so they don't collide with Framer's versions.
-type NativeButtonProps = Omit<
-  React.ButtonHTMLAttributes<HTMLButtonElement>,
-  | 'onDrag'
-  | 'onDragStart'
-  | 'onDragEnd'
-  | 'onDragOver'
-  | 'onDragEnter'
-  | 'onDragLeave'
->
-
-type ButtonProps = NativeButtonProps & MotionProps & {
-  className?: string
-}
+// Take the actual prop type of motion.button, then omit React's HTML drag handlers
+type MotionButtonProps = React.ComponentProps<typeof motion.button>
+type ButtonProps = Omit<
+  MotionButtonProps,
+  'onDrag' | 'onDragStart' | 'onDragEnd' | 'onDragOver' | 'onDragEnter' | 'onDragLeave'
+> & { className?: string }
 
 export default function Button({
   className = '',
