@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 
-// Take the actual prop type of motion.button, then omit React's HTML drag handlers
+// Use motion.button's own props, but drop the conflicting HTML drag handlers
 type MotionButtonProps = React.ComponentProps<typeof motion.button>
 type ButtonProps = Omit<
   MotionButtonProps,
