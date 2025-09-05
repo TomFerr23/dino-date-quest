@@ -177,19 +177,10 @@ export default function Memory() {
     setJustMatchedIds([])
   }
 
-  // ---------- sizing ----------
-  const cols = 4, rows = 4
-  const pagePadding = 32
-  const gap = w < 480 ? 10 : 12
-  const chromeEstimate = w < 480 ? 200 : 180
-  const availW = Math.max(340, w - pagePadding)
-  const availH = Math.max(360, h - chromeEstimate)
-  const widthPerCol = (availW - gap * (cols - 1)) / cols
-  const heightPerRow = (availH - gap * (rows - 1)) / rows
-  const widthFromHeight = heightPerRow * 0.75
-  let cardW = Math.floor(Math.min(widthPerCol, widthFromHeight))
-  cardW = Math.max(130, Math.min(cardW, 200)) // push min size up
-  const cardH = Math.floor(cardW * 4 / 3)
+  // ----- fluid grid sizing (no overflow) -----
+  const isMobile = w < 640 // Tailwind's sm breakpoint
+  const cols = isMobile ? 3 : 4
+  const gap = isMobile ? 8 : 12
 
   return (
     <div className="min-h-screen max-w-[1100px] mx-auto px-4 py-6">
@@ -211,12 +202,12 @@ export default function Memory() {
           </div>
         </div>
 
+        {/* FLUID GRID (no fixed widths) */}
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `repeat(${cols}, ${cardW}px)`,
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
             gap: `${gap}px`,
-            justifyContent: 'center',
           }}
         >
           {deck.map((c, i) => (
@@ -228,8 +219,6 @@ export default function Memory() {
               justMatched={justMatchedIds.includes(c.id)}
               disabled={c.matched || choiceIdxs.length === 2}
               onClick={() => flipAt(i)}
-              width={cardW}
-              height={cardH}
             />
           ))}
         </div>
@@ -282,8 +271,6 @@ function MemoryCard({
   justMatched,
   disabled,
   onClick,
-  width,
-  height,
 }: {
   id: number
   img: string
@@ -291,15 +278,13 @@ function MemoryCard({
   justMatched: boolean
   disabled?: boolean
   onClick: () => void
-  width: number
-  height: number
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled || flipped}
-      className="relative rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-dino/60 disabled:cursor-default"
-      style={{ width, height }}
+      className="relative w-full rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-dino/60 disabled:cursor-default"
+      style={{ aspectRatio: '3 / 4', touchAction: 'manipulation' as any }}
       aria-label={flipped ? 'Face up card' : 'Face down card'}
     >
       <motion.div
@@ -322,7 +307,13 @@ function MemoryCard({
           className="absolute inset-0"
           style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' } as React.CSSProperties}
         >
-          <img src={img} alt="" className="w-full h-full object-cover" />
+          <img
+            src={img}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       </motion.div>
 
