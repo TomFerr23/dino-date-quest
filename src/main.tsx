@@ -11,6 +11,7 @@ import Quiz from './pages/Quiz'
 import Results from './pages/Results'
 import Gallery from './pages/Gallery'   // <- matches Gallery.tsx
 import Gift from './pages/Gift'         // <- matches Gift.tsx
+import Chef from './pages/Chef'
 
 
 
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/memory" element={<Memory />} />
         <Route path="/unblur" element={<Unblur />} /> 
         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/chef" element={<Chef />} />
         <Route path="/results" element={<Results />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/gift" element={<Gift />} />

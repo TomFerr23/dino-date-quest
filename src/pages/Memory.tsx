@@ -150,7 +150,7 @@ export default function Memory() {
             setRunning(false)
             setWon(true)
             playWin()
-            addScale()
+            addScale('memory')
             setStep(2)
           }
         }, 280)

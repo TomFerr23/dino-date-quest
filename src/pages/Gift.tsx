@@ -1,221 +1,256 @@
+// src/pages/Gift.tsx
 import React from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
+import { DotLottieReact } from "@lottiefiles/dotlottie-react"
 import Card from "../components/Card"
 import Button from "../components/Button"
 import { useStore } from "../store"
 
-type Idea = { title?: string; name?: string; text?: string; description?: string; details?: string } | string
-type QuizAnswers = Record<string, string | string[] | number>
-type MemoryStats = { pairs?: number; moves?: number; seconds?: number; streak?: number; bestStreak?: number }
+type DateIdea = {
+  title: string
+  blurb: string
+  estCost?: "€" | "€€" | "€€€"
+  tags?: string[]
+  steps?: string[]
+}
 
 export default function Gift() {
   const navigate = useNavigate()
 
-  // ——— Pull from store (robust to different shapes/names) ———
-  const selectedIdea: Idea | null = useStore((s: any) =>
-    s.selectedIdea ?? s.results?.selectedIdea ?? null
-  )
-  const quizAnswers: QuizAnswers | null = useStore((s: any) =>
-    s.quiz?.answers ?? s.quizAnswers ?? null
-  )
-  const quizIdeas: any[] | null = useStore((s: any) =>
-    s.quiz?.ideas ?? s.quizIdeas ?? null
-  )
-  const memoryStats: MemoryStats | null = useStore((s: any) =>
-    s.memory?.stats ?? s.memoryStats ?? null
-  )
-  const matchedThumbs: string[] | null = useStore((s: any) =>
-    s.memory?.matchedThumbs ?? s.memory?.matchedUrls ?? s.memoryThumbs ?? null
-  )
+  // Pull from store (fallback to localStorage just in case)
+  const selectedFromStore = useStore((s: any) => s.results?.selectedIdea ?? s.selectedIdea ?? null)
 
-  // Normalize the selected idea into {title, text}
-  const idea = React.useMemo(() => {
-    if (!selectedIdea) return null
-    if (typeof selectedIdea === "string") {
-      return { title: "Your Date", text: selectedIdea }
+  const [idea, setIdea] = React.useState<DateIdea | null>(null)
+  React.useEffect(() => {
+    if (selectedFromStore) {
+      const s = selectedFromStore as any
+      setIdea({
+        title: s.title || s.name || "Your Date",
+        blurb: s.blurb || s.text || s.description || s.details || "",
+        estCost: s.estCost,
+        tags: s.tags,
+        steps: s.steps,
+      })
+      return
     }
-    const obj = selectedIdea as any
-    const title = obj.title || obj.name || "Your Date"
-    const text = obj.text || obj.description || obj.details || ""
-    return { title, text }
-  }, [selectedIdea])
+    try {
+      const v = localStorage.getItem("chosen_date_idea")
+      if (v) setIdea(JSON.parse(v))
+    } catch {}
+  }, [selectedFromStore])
 
-  // Helpers
-  const hasQuiz = !!quizAnswers && Object.keys(quizAnswers).length > 0
-  const hasMemory = !!(memoryStats && (memoryStats.pairs || memoryStats.moves || memoryStats.seconds))
-  const hasThumbs = !!(matchedThumbs && matchedThumbs.length)
+  function printCoupon() {
+    window.print()
+  }
 
   return (
-    <div className="min-h-screen max-w-6xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl md:text-3xl font-extrabold">Quest Recap</h1>
-        <Link to="/" className="text-sm underline opacity-80 hover:opacity-100">
-          Back home
-        </Link>
+    <div className="min-h-screen max-w-5xl mx-auto px-4 py-8">
+      {/* PRINT CSS: only coupon should print */}
+      <style>{`
+        @media print {
+          .print-hide { display: none !important; }
+          #coupon-print { display: block !important; }
+          body { background: white !important; }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between print-hide">
+        <h1 className="text-2xl md:text-3xl font-extrabold">Your Gift</h1>
+        <Link to="/" className="text-sm underline opacity-80 hover:opacity-100">Back home</Link>
       </div>
 
-      {/* If nothing is selected yet, nudge user */}
-      {!idea && !hasQuiz && !hasMemory ? (
-        <Card className="text-center">
-          <p className="opacity-80">
-            Looks like you haven’t finished the quests yet. Do the Memory game and the Quiz to unlock your recap!
-          </p>
-          <div className="mt-4 flex gap-3 justify-center flex-wrap">
-            <Button onClick={() => navigate("/memory")}>Play Memory</Button>
-            <Button className="bg-black/70" onClick={() => navigate("/quiz")}>Go to Preferences</Button>
+      {/* Gift animation */}
+      <motion.div
+        className="print-hide"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 260, damping: 22 }}
+      >
+        <Card className="overflow-hidden">
+          <div className="grid md:grid-cols-2 gap-6 items-center">
+            <div className="order-2 md:order-1">
+              <h2 className="text-xl font-semibold">A little present… 🎁</h2>
+              <p className="opacity-80 mt-2">
+                We wrapped your hand-picked date into a classy coupon. Print it, save it, or just bask in the cuteness.
+              </p>
+            </div>
+            <div className="order-1 md:order-2">
+              <DotLottieReact
+                src="https://lottie.host/0cdbfe52-6658-4c79-a7ba-30d889abcbf0/qNdo8NohNK.lottie"
+                loop
+                autoplay
+                style={{ width: "100%", height: 260 }}
+              />
+            </div>
           </div>
         </Card>
-      ) : (
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          {/* Left: Date idea + Quiz answers */}
-          <div className="space-y-6">
-            <Card>
-              <div className="flex items-start justify-between">
-                <h2 className="text-xl font-semibold">Your Date Pick</h2>
-                <div className="flex gap-2">
-                  <Button onClick={() => navigate("/results")}>Change idea</Button>
-                </div>
+      </motion.div>
+
+      {/* Coupon (screen view) */}
+      <div className="mt-8 print-hide">
+        <AnimatePresence mode="wait">
+          {idea ? (
+            <motion.div
+              key="coupon"
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
+            >
+              <PrettyCoupon idea={idea} />
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Button onClick={printCoupon} className="bg-black/80">Print coupon</Button>
+                <Button onClick={() => navigate("/gallery")}>Polaroid Gallery</Button>
+                <Button onClick={() => navigate("/results")} className="bg-dino/90">Back to Results</Button>
               </div>
-
-              <AnimatePresence mode="wait">
-                {idea ? (
-                  <motion.div
-                    key="idea"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                    className="mt-3"
-                  >
-                    <h3 className="text-lg font-bold">{idea.title}</h3>
-                    {idea.text && <p className="mt-2 opacity-80 whitespace-pre-wrap">{idea.text}</p>}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="noidea"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="mt-3 opacity-70"
-                  >
-                    No date selected yet. Pick one from the results.
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Card>
-
-            {hasQuiz && (
-              <Card>
-                <h2 className="text-xl font-semibold">Your Preferences</h2>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {Object.entries(quizAnswers!).map(([k, v], i) => {
-                    const val = Array.isArray(v) ? v.join(", ") : String(v)
-                    return <Pill key={k + i} label={k} value={val} />
-                  })}
-                </div>
-
-                {!!(quizIdeas && quizIdeas.length) && (
-                  <div className="mt-4">
-                    <p className="text-sm opacity-70 mb-2">Other ideas we considered:</p>
-                    <ul className="text-sm list-disc pl-5 space-y-1 opacity-80">
-                      {quizIdeas.slice(0, 3).map((it: any, idx: number) => {
-                        const title = it?.title || it?.name || `Idea ${idx + 1}`
-                        return <li key={idx}>{title}</li>
-                      })}
-                    </ul>
-                  </div>
-                )}
-              </Card>
-            )}
-          </div>
-
-          {/* Right: Memory summary */}
-          <div className="space-y-6">
-            {hasMemory && (
-              <Card>
-                <h2 className="text-xl font-semibold">Memory Match</h2>
-                <div className="mt-3 grid grid-cols-3 gap-3">
-                  <Stat label="Pairs" value={memoryStats?.pairs ?? "—"} />
-                  <Stat label="Moves" value={memoryStats?.moves ?? "—"} />
-                  <Stat label="Time" value={formatSeconds(memoryStats?.seconds)} />
-                </div>
-                {(memoryStats?.streak || memoryStats?.bestStreak) && (
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    {"streak" in (memoryStats || {}) && <Stat label="Streak" value={memoryStats?.streak ?? "—"} />}
-                    {"bestStreak" in (memoryStats || {}) && <Stat label="Best" value={memoryStats?.bestStreak ?? "—"} />}
-                  </div>
-                )}
-              </Card>
-            )}
-
-            {hasThumbs && (
-              <Card>
-                <h3 className="text-lg font-semibold mb-2">Moments you matched</h3>
-                <Mosaic images={matchedThumbs!} />
-              </Card>
-            )}
-
-            {!hasMemory && !hasThumbs && (
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
               <Card className="text-center">
-                <p className="opacity-80">Play the Memory game to see your stats and a mosaic of the photos you matched.</p>
-                <div className="mt-4"><Button onClick={() => navigate("/memory")}>Play Memory</Button></div>
+                <p className="opacity-80">
+                  No date selected yet. Pick one in Results and your gift will appear here.
+                </p>
+                <div className="mt-4">
+                  <Button onClick={() => navigate("/results")}>Go to Results</Button>
+                </div>
               </Card>
-            )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* PRINT-ONLY COUPON */}
+      <div id="coupon-print" className="hidden">
+        {idea && <PrintableCoupon idea={idea} />}
+      </div>
+    </div>
+  )
+}
+
+/* ---------- Coupon components ---------- */
+
+function PrettyCoupon({ idea }: { idea: DateIdea }) {
+  // decorative “ribbon” + faux QR + ticket edges
+  return (
+    <div className="relative">
+      {/* ribbon */}
+      <div className="absolute -top-3 left-4 right-4 h-6 bg-dino/80 rounded-md blur-[1px]" />
+      <div className="relative rounded-3xl bg-white shadow-[0_30px_60px_rgba(0,0,0,.12)] border border-black/10 overflow-hidden">
+        {/* ticket notches */}
+        <div className="absolute -left-5 top-16 w-10 h-10 rounded-full bg-[#F7F5F2] border border-black/10" />
+        <div className="absolute -right-5 top-16 w-10 h-10 rounded-full bg-[#F7F5F2] border border-black/10" />
+
+        <div className="p-6 md:p-8">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[11px] tracking-widest uppercase opacity-60">Admit Two</div>
+              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight mt-1">
+                {idea.title || "Lovely Date"}
+              </h2>
+              {idea.blurb && <p className="opacity-80 mt-2">{idea.blurb}</p>}
+            </div>
+            <FakeQr />
+          </div>
+
+          {!!(idea.tags && idea.tags.length) && (
+            <div className="mt-4 flex flex-wrap gap-1">
+              {idea.tags!.map((t, i) => (
+                <span key={i} className="px-2 py-0.5 rounded-full border text-xs">{t}</span>
+              ))}
+              {idea.estCost && (
+                <span className="px-2 py-0.5 rounded-full border text-xs">{idea.estCost}</span>
+              )}
+            </div>
+          )}
+
+          {!!(idea.steps && idea.steps.length) && (
+            <ol className="mt-5 text-sm list-decimal pl-5 space-y-1">
+              {idea.steps!.map((s, i) => <li key={i}>{s}</li>)}
+            </ol>
+          )}
+
+          <div className="mt-6 grid grid-cols-2 gap-6">
+            <LineField label="Scheduled for" />
+            <LineField label="Signed by" />
+          </div>
+
+          <div className="mt-5 text-[10px] opacity-60">
+            Terms: transferable only between us; valid forever; infinitely extendable with snacks.
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-/* ---------------- Small components ---------------- */
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function PrintableCoupon({ idea }: { idea: DateIdea }) {
   return (
-    <div className="rounded-xl border border-black/10 px-3 py-2 bg-white/60">
-      <div className="text-xs opacity-60">{label}</div>
-      <div className="font-semibold">{value}</div>
-    </div>
-  )
-}
-
-function Pill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-full border border-black/10 px-3 py-1.5 bg-white/70">
-      <span className="text-[11px] uppercase tracking-wide opacity-60">{label}</span>
-      <span className="text-sm font-medium">{value}</span>
-    </div>
-  )
-}
-
-function Mosaic({ images }: { images: string[] }) {
-  // responsive row height / count
-  return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
-      {images.slice(0, 24).map((src, i) => (
-        <motion.div
-          key={src + i}
-          initial={{ opacity: 0, scale: 0.96, y: 6 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: i * 0.02, type: "spring", damping: 22, stiffness: 240 }}
-          className="aspect-square overflow-hidden rounded-lg border border-black/10 bg-black"
-        >
-          <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
-        </motion.div>
-      ))}
-      {images.length > 24 && (
-        <div className="col-span-full text-center text-sm opacity-60 mt-1">
-          +{images.length - 24} more memories
+    <div className="max-w-[720px] mx-auto p-8 border-2 border-dashed rounded-2xl">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">DATE COUPON</h1>
+          <div className="text-xs opacity-70">Redeem for one excellent time together.</div>
         </div>
-      )}
+        <FakeQr />
+      </div>
+
+      <div className="mt-5">
+        <h2 className="text-2xl font-bold">{idea.title}</h2>
+        {idea.blurb && <div className="mt-1 text-sm opacity-80">{idea.blurb}</div>}
+
+        {!!(idea.tags && idea.tags.length) && (
+          <div className="mt-3 flex flex-wrap gap-1">
+            {idea.tags!.map((t, i) => (
+              <span key={i} className="px-2 py-0.5 rounded-full border text-xs">{t}</span>
+            ))}
+            {idea.estCost && (
+              <span className="px-2 py-0.5 rounded-full border text-xs">{idea.estCost}</span>
+            )}
+          </div>
+        )}
+
+        {!!(idea.steps && idea.steps.length) && (
+          <ol className="mt-4 text-sm list-decimal pl-5 space-y-1">
+            {idea.steps!.map((s, i) => <li key={i}>{s}</li>)}
+          </ol>
+        )}
+      </div>
+
+      <div className="mt-8 grid grid-cols-2 gap-6">
+        <LineField label="Scheduled for" />
+        <LineField label="Signed by" />
+      </div>
+
+      <div className="mt-5 text-[10px] opacity-60">
+        Terms: transferable only between us; valid forever; infinitely extendable with snacks.
+      </div>
     </div>
   )
 }
 
-function formatSeconds(s?: number) {
-  if (!s && s !== 0) return "—"
-  const m = Math.floor(s / 60)
-  const r = s % 60
-  return `${m}:${String(r).padStart(2, "0")}`
+/* ---------- bits ---------- */
+function FakeQr() {
+  return (
+    <div className="grid grid-cols-5 gap-0.5">
+      {Array.from({ length: 25 }).map((_, i) => (
+        <div key={i} className={`${(i * 7) % 3 === 0 ? "bg-black" : "bg-black/20"} w-3 h-3`} />
+      ))}
+    </div>
+  )
+}
+
+function LineField({ label }: { label: string }) {
+  return (
+    <div>
+      <div className="text-xs opacity-60">{label}</div>
+      <div className="mt-2 h-10 border-b" />
+    </div>
+  )
 }

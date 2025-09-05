@@ -14,7 +14,7 @@ const TOTAL_STEPS = 5
 const Landing: React.FC = () => {
   const navigate = useNavigate()
   const step = useStore((s) => s.step)
-  const scales = useStore((s) => s.scales)
+  const scaleCount = useStore(s => s.scales.length)
   const setStep = useStore((s) => s.setStep)
 
   const [fireConfetti, setFireConfetti] = React.useState(false)
@@ -45,7 +45,7 @@ const Landing: React.FC = () => {
           <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-dino">
             🦕 {PERSON.title}
           </h1>
-          <div className="text-xs md:text-sm opacity-70">Scales collected: {scales}</div>
+          <div className="text-xs md:text-sm opacity-70">Scales collected: {scaleCount}</div>
         </header>
 
         {/* Main Grid */}

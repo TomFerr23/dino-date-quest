@@ -77,11 +77,11 @@ export default function Quiz() {
     window.print()
   }
 
-  function goResults() {
-    if (selectedIdx == null) return
-    persistSelection()
-    navigate('/results')
-  }
+  function goChef() {
+  if (selectedIdx == null) return
+  persistSelection()
+  navigate('/chef')
+}
 
   return (
     <div className="min-h-screen max-w-6xl mx-auto px-4 py-8">
@@ -168,14 +168,16 @@ export default function Quiz() {
             </div>
 
             {/* Post-choices actions */}
-            <div className="mt-5 flex flex-wrap gap-3 print-hide">
-              <Button onClick={printSelected} className="bg-black/80" disabled={selectedIdx==null}>
-                Print selected coupon
-              </Button>
-              <Button onClick={goResults} disabled={selectedIdx==null}>
-                Continue → Results
-              </Button>
-            </div>
+<div className="mt-5 flex flex-wrap gap-3 print-hide">
+  <Button onClick={printSelected} className="bg-black/80" disabled={selectedIdx==null}>
+    Print selected coupon
+  </Button>
+  {/* replace this: <Button onClick={goResults} ...> */}
+  <Button onClick={goChef} disabled={selectedIdx==null}>
+    Continue → Chef
+  </Button>
+</div>
+
 
             {/* PRINT-ONLY COUPON (only this prints) */}
             <div id="coupon-print" className="hidden">

@@ -1,22 +1,51 @@
+// src/store/index.ts
 import { create } from 'zustand'
 
-export type Scores = { cozy:number; adventure:number; foodie:number; culture:number }
+export type Scale = { id: string; value: number }
 
-type State = {
+export type Store = {
   step: number
-  scales: number
-  scores: Scores
-  prefs: Record<string,string>
-  setStep: (n:number)=>void
-  addScale: ()=>void
-  bump: (k:keyof Scores)=>void
-  setPref: (k:string, v:string)=>void
+  setStep: (n: number) => void
+
+  // NEW: collectibles + quest results
+  scales: Scale[]
+  addScale: (id: string, value?: number) => void
+
+  results: {
+    unblurCorrect?: number
+    quizIdeaTitle?: string
+    chefCompleted?: boolean
+  }
+  setResults: (patch: Partial<Store['results']>) => void
+
+  reset: () => void
 }
 
-export const useStore = create<State>((set)=> ({
-  step: 0, scales: 0, scores: { cozy:0, adventure:0, foodie:0, culture:0 }, prefs:{},
-  setStep: (n)=> set((s)=> ({ step: Math.max(s.step, n) })),
-  addScale: ()=> set((s)=> ({ scales: s.scales + 1 })),
-  bump: (k)=> set((s)=> ({ scores: { ...s.scores, [k]: s.scores[k]+1 } })),
-  setPref: (k,v)=> set((s)=> ({ prefs: { ...s.prefs, [k]: v } }))
+export const useStore = create<Store>((set) => ({
+  step: 0,
+  setStep: (n) => set({ step: n }),
+
+  // minimal impl
+  scales: [],
+  addScale: (id, value = 1) =>
+    set((s) => {
+      const i = s.scales.findIndex((x) => x.id === id)
+      if (i >= 0) {
+        const next = [...s.scales]
+        next[i] = { id, value }
+        return { scales: next }
+      }
+      return { scales: [...s.scales, { id, value }] }
+    }),
+
+  results: {},
+  setResults: (patch) =>
+    set((s) => ({ results: { ...s.results, ...patch } })),
+
+  reset: () =>
+    set({
+      step: 0,
+      scales: [],
+      results: {},
+    }),
 }))
