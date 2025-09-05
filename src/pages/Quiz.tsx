@@ -33,6 +33,9 @@ export default function Quiz() {
   const [ideas, setIdeas] = React.useState<DateIdea[] | null>(null)
   const [selectedIdx, setSelectedIdx] = React.useState<number | null>(null)
 
+  // ref to scroll to ideas on generate
+  const ideasRef = React.useRef<HTMLDivElement | null>(null)
+
   const answeredCount = [
     answers.time, answers.vibe, answers.budget !== undefined ? 1 : undefined,
     answers.place, answers.energy, answers.food && answers.food.length ? 1 : undefined
@@ -58,6 +61,11 @@ export default function Quiz() {
     setIdeas(made)
     setStep(3)
     setSelectedIdx(null)
+
+    // smooth scroll to the ideas section
+    setTimeout(() => {
+      ideasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
   }
 
   function isValid() {
@@ -73,15 +81,14 @@ export default function Quiz() {
   function printSelected() {
     if (selectedIdx == null || !ideas) return
     persistSelection()
-    // trigger print (only coupon will render)
     window.print()
   }
 
   function goChef() {
-  if (selectedIdx == null) return
-  persistSelection()
-  navigate('/chef')
-}
+    if (selectedIdx == null) return
+    persistSelection()
+    navigate('/chef')
+  }
 
   return (
     <div className="min-h-screen max-w-6xl mx-auto px-4 py-8">
@@ -110,8 +117,8 @@ export default function Quiz() {
         </div>
       </div>
 
-      {/* Questions */}
-      <div className="grid md:grid-cols-2 gap-6 print-hide">
+      {/* Questions (mobile-friendly grid) */}
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 print-hide">
         <QTime value={answers.time} onChange={v => setA('time', v)} submitted={submitted} />
         <QVibe value={answers.vibe} onChange={v => setA('vibe', v)} submitted={submitted} />
         <QBudget value={answers.budget} onChange={v => setA('budget', v)} submitted={submitted} />
@@ -121,12 +128,13 @@ export default function Quiz() {
       </div>
 
       {/* Actions */}
-      <div className="mt-6 flex flex-wrap gap-3 print-hide">
-        <Button onClick={onSubmit}>Generate date ideas</Button>
+      <div className="mt-6 flex flex-col sm:flex-row gap-3 print-hide">
+        <Button onClick={onSubmit} className="w-full sm:w-auto">Generate date ideas</Button>
         <Link to="/" className="self-center text-sm underline opacity-80 hover:opacity-100">Back</Link>
       </div>
 
       {/* Output */}
+      <div ref={ideasRef} />
       <AnimatePresence>
         {ideas && (
           <motion.div
@@ -136,7 +144,8 @@ export default function Quiz() {
           >
             <h3 className="text-xl font-semibold mb-3 print-hide">Pick your favorite:</h3>
 
-            <div className="grid md:grid-cols-3 gap-4 print-hide">
+            {/* Responsive cards: 1 col on mobile, 2 on md, 3 on lg */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 print-hide">
               {ideas.map((it, idx) => {
                 const selected = selectedIdx === idx
                 return (
@@ -149,7 +158,7 @@ export default function Quiz() {
                     }`}
                     aria-pressed={selected}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex flex-wrap gap-1">
                         {it.tags.map((t,i)=>(
                           <span key={i} className="px-2 py-0.5 rounded-full bg-black/5 text-xs">{t}</span>
@@ -168,16 +177,14 @@ export default function Quiz() {
             </div>
 
             {/* Post-choices actions */}
-<div className="mt-5 flex flex-wrap gap-3 print-hide">
-  <Button onClick={printSelected} className="bg-black/80" disabled={selectedIdx==null}>
-    Print selected coupon
-  </Button>
-  {/* replace this: <Button onClick={goResults} ...> */}
-  <Button onClick={goChef} disabled={selectedIdx==null}>
-    Continue → Chef
-  </Button>
-</div>
-
+            <div className="mt-5 flex flex-col sm:flex-row gap-3 print-hide">
+              <Button onClick={printSelected} className="bg-black/80 w-full sm:w-auto" disabled={selectedIdx==null}>
+                Print selected coupon
+              </Button>
+              <Button onClick={goChef} className="w-full sm:w-auto" disabled={selectedIdx==null}>
+                Continue → Chef
+              </Button>
+            </div>
 
             {/* PRINT-ONLY COUPON (only this prints) */}
             <div id="coupon-print" className="hidden">
@@ -455,35 +462,23 @@ function buildIdeas(a: Answers): DateIdea[] {
       ],
     },
     {
-      title: 'Board-Game Café + Loser Coupons',
-      blurb: 'Competitive but cute. Loser earns a redeemable cuddle coupon.',
+      title: 'Pottery Class + Clay Chaos',
+      blurb: 'Spin a bowl, make a mess, leave with a wobbly masterpiece.',
       estCost: band,
-      tags: ['indoor', a.vibe],
+      tags: ['indoor', 'cozy', a.time],
       steps: [
-        'Pick a game that neither knows (chaos).',
-        'Mid-game snack order using your food picks.',
-        'Loser writes a coupon the winner can redeem later.',
+        'Hands-on pottery class (wheel or hand-building).',
+        'Each crafts a “surprise” for the other.',
+        'Post-class photo with the messiest apron as the winner.',
       ],
     },
   ]
 
+  // apply high/low energy bias + basic filters
   const filtered = basePool
     .filter(x => (a.place === 'either' ? true : x.tags.includes(a.place)))
     .filter(x => (a.vibe ? x.tags.includes(a.vibe) || true : true))
     .filter(x => (a.time ? x.tags.includes(a.time) || true : true))
-
-  const flavor = a.food
-  function withFlavor(it: DateIdea): DateIdea {
-    const s = [...it.steps]
-    if (flavor.includes('coffee')) s.splice(1, 0, 'Tea stop: rate the brew from 1–10.')
-    if (flavor.includes('dessert')) s.push('Dessert boss picks the final bite.')
-    if (flavor.includes('picnic')) s.unshift('Pack a tiny picnic kit: blanket, fruit, something bubbly.')
-    if (flavor.includes('pizza')) s.splice(1, 0, 'Pizza slice showdown: swap a bite and rank toppings.')
-    if (flavor.includes('asian')) s.splice(1, 0, 'Asian bites: dumplings/noodles taste test (share two).')
-    if (flavor.includes('cocktails')) s.push('Nightcap challenge: invent a mocktail name from the date.')
-    if (flavor.includes('brunch')) s.splice(0, 0, 'Brunch pre-game: pancakes vs. eggs (you choose).')
-    return { ...it, steps: s }
-  }
 
   const energyPick = (arr: DateIdea[]) => {
     if ((a as Answers).energy === 'high') return arr.filter(x => !x.tags.includes('cozy')).slice(0, 5)
@@ -491,8 +486,24 @@ function buildIdeas(a: Answers): DateIdea[] {
     return arr
   }
 
+  // flavor tweaks (Beer stop instead of Tea stop)
+  const flavor = a.food
+  function withFlavor(it: DateIdea): DateIdea {
+    const s = [...it.steps]
+    // Replace the previous "Tea stop" concept with a beer stop when coffee was chosen
+    if (flavor.includes('coffee')) s.splice(1, 0, 'Beer stop: try a local brew and rate it 1–10.')
+    if (flavor.includes('dessert')) s.push('Dessert boss picks the final bite.')
+    if (flavor.includes('picnic')) s.unshift('Pack a tiny picnic kit: blanket, fruit, something bubbly.')
+    if (flavor.includes('pizza')) s.splice(1, 0, 'Pizza slice showdown: swap a bite and rank toppings.')
+    if (flavor.includes('asian')) s.splice(1, 0, 'Asian bites: dumplings/noodles taste test (share two).')
+    if (flavor.includes('cocktails')) s.push('Nightcap challenge: invent a mocktail/cocktail name from the date.')
+    if (flavor.includes('brunch')) s.splice(0, 0, 'Brunch pre-game: pancakes vs. eggs (you choose).')
+    return { ...it, steps: s }
+  }
+
   const pool = energyPick(filtered.length ? filtered : basePool).map(withFlavor)
 
+  // pick top 3 diverse ideas
   const out: DateIdea[] = []
   const seen = new Set<string>()
   for (const idea of pool) {
