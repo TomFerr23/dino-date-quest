@@ -1,3 +1,4 @@
+// src/pages/Landing.tsx
 import React from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -9,18 +10,27 @@ import { useStore } from '../store'
 import IntroSplash from '../components/IntroSplash'
 import { PERSON } from '../config'
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 3
+
+// Animated background color cycle for the second featured image
+const bgCycle = {
+  animate: {
+    backgroundColor: ['#ffe5ec', '#e0f7fa', '#fff9c4', '#f3e5f5', '#ffe5ec'],
+    transition: { duration: 8, repeat: Infinity, ease: 'easeInOut' },
+  },
+}
 
 const Landing: React.FC = () => {
   const navigate = useNavigate()
   const step = useStore((s) => s.step)
-  const scaleCount = useStore(s => s.scales.length)
+  const scaleCount = useStore((s) => s.scales.length)
   const setStep = useStore((s) => s.setStep)
 
   const [fireConfetti, setFireConfetti] = React.useState(false)
   const [showSplash, setShowSplash] = React.useState(true)
 
-  const progressPct = Math.min((step / TOTAL_STEPS) * 100, 100)
+  const completed = Math.min(step, TOTAL_STEPS)
+  const progressPct = Math.min((completed / TOTAL_STEPS) * 100, 100)
 
   const startQuest = () => {
     setFireConfetti(true)
@@ -28,7 +38,6 @@ const Landing: React.FC = () => {
     setTimeout(() => navigate('/memory'), 600)
   }
 
-  // Profile image (config override supported)
   const PROFILE_IMG =
     (PERSON as any).profileImage ||
     'https://res.cloudinary.com/dwxa3tffm/image/upload/v1756897821/profile-image_gxd1tq.png'
@@ -52,31 +61,29 @@ const Landing: React.FC = () => {
         <div className="grid md:grid-cols-5 gap-6 items-stretch">
           {/* LEFT */}
           <Card className="md:col-span-3">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-sm opacity-70">Welcome,</div>
                 <h2 className="text-3xl md:text-4xl font-extrabold leading-tight">
                   {PERSON.name}
                 </h2>
-                {/* Force a.k.a. Bobíí */}
                 <div className="text-sm opacity-70 -mt-1">a.k.a. Bobíí</div>
               </div>
 
               <img
                 src={PROFILE_IMG}
                 alt={`${PERSON.name} profile`}
-                className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-soft border border-black/5"
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover shadow-soft border border-black/5"
               />
             </div>
 
-            {/* Updated copy (no spoilers) */}
             <p className="mt-4 opacity-80">
-              Your objective is simple: complete {TOTAL_STEPS} quick quests. That’s it.
-              No hints, no spoilers—just follow the dino footprints and crush the challenges.
+              Your objective is simple: complete <strong>{TOTAL_STEPS}</strong> quick quests:
+              Memory, Unblur, and Quiz. No spoilers—follow the dino footprints and crush it. 🫶
             </p>
 
-            {/* CTAs with equal height */}
-            <div className="mt-6 flex flex-wrap gap-3">
+            {/* CTAs */}
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <motion.button
                 onClick={startQuest}
                 whileTap={{ scale: 0.98 }}
@@ -85,16 +92,13 @@ const Landing: React.FC = () => {
                 Begin the quests
               </motion.button>
 
-              <Link to="/quiz">
-                <Button className="h-12 px-6 py-0 inline-flex items-center justify-center bg-black/80">
-                  Skip to preferences
-                </Button>
+              <Link to="/quiz" className="text-sm underline opacity-70 hover:opacity-100">
+                Skip to preferences
               </Link>
-
-              <Link to="/gallery" className="self-center text-sm underline opacity-80 hover:opacity-100">
+              <Link to="/gallery" className="text-sm underline opacity-70 hover:opacity-100">
                 Polaroid Gallery
               </Link>
-              <Link to="/gift" className="self-center text-sm underline opacity-80 hover:opacity-100">
+              <Link to="/gift" className="text-sm underline opacity-70 hover:opacity-100">
                 Open Gift (later)
               </Link>
             </div>
@@ -102,9 +106,9 @@ const Landing: React.FC = () => {
             {/* Progress */}
             <div className="mt-7">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Progress</span>
+                <span className="text-sm font-medium">Quest progress</span>
                 <span className="text-sm opacity-70">
-                  {step}/{TOTAL_STEPS} challenges
+                  {completed}/{TOTAL_STEPS} quests
                 </span>
               </div>
               <div className="h-3 bg-black/10 rounded-full overflow-hidden">
@@ -116,17 +120,17 @@ const Landing: React.FC = () => {
                   aria-valuemax={100}
                 />
               </div>
-              <ul className="mt-3 flex gap-2 text-xl" aria-label="Challenge badges">
+              <ul className="mt-3 flex gap-2 text-xl" aria-label="Quest badges">
                 {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
                   <li key={i} aria-hidden>
-                    {i < step ? '🟩' : '⬜️'}
+                    {i < completed ? '🟩' : '⬜️'}
                   </li>
                 ))}
               </ul>
             </div>
           </Card>
 
-          {/* RIGHT (tighter Lottie) */}
+          {/* RIGHT (tight Lottie) */}
           <Card className="md:col-span-2 flex items-center justify-center">
             <div className="w-full">
               <DotLottieReact
@@ -135,8 +139,8 @@ const Landing: React.FC = () => {
                 autoplay
                 style={{
                   width: '100%',
-                  maxWidth: 340,      // tighter than before
-                  minHeight: 200,
+                  maxWidth: 360,
+                  minHeight: 220,
                   marginInline: 'auto',
                   display: 'block',
                 }}
@@ -148,19 +152,47 @@ const Landing: React.FC = () => {
           </Card>
         </div>
 
+        {/* Featured images */}
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-4">Featured images</h2>
+          <div className="flex flex-col md:flex-row gap-6 justify-center">
+            {/* First static image */}
+            <div className="rounded-2xl overflow-hidden shadow-soft max-w-md mx-auto">
+              <img
+                src="https://res.cloudinary.com/dwxa3tffm/image/upload/v1757140140/mexican-nat_dw8ivv.png"
+                alt="Featured Mexican Nat"
+                className="w-full h-auto object-cover"
+              />
+            </div>
+
+            {/* Second image with animated background */}
+            <motion.div
+              variants={bgCycle}
+              animate="animate"
+              className="p-4 rounded-2xl shadow-soft flex items-center justify-center max-w-md mx-auto"
+            >
+              <img
+                src="https://res.cloudinary.com/dwxa3tffm/image/upload/v1757140412/vaping-nat_vswrlo.png"
+                alt="Featured Vaping Nat"
+                className="max-h-[320px] w-auto object-contain"
+              />
+            </motion.div>
+          </div>
+        </div>
+
         {/* How it works */}
-        <div className="mt-6 grid md:grid-cols-3 gap-4">
+        <div className="mt-8 grid md:grid-cols-3 gap-4">
           <Card>
-            <h3 className="font-semibold mb-1">1) Play tiny challenges</h3>
-            <p className="text-sm opacity-80">Memory Match, Photo Unblur, Chef’s Kiss, Mosaic, This-or-That.</p>
+            <h3 className="font-semibold mb-1">1) Play the quests</h3>
+            <p className="text-sm opacity-80">Memory Match, Photo Unblur, and the Date Quiz.</p>
           </Card>
           <Card>
-            <h3 className="font-semibold mb-1">2) Dial in your vibe</h3>
-            <p className="text-sm opacity-80">Answer quick preferences to get 3 perfect date ideas.</p>
+            <h3 className="font-semibold mb-1">2) Pick a date</h3>
+            <p className="text-sm opacity-80">We’ll generate fun ideas tailored to your vibe.</p>
           </Card>
           <Card>
             <h3 className="font-semibold mb-1">3) Claim your gift 🎁</h3>
-            <p className="text-sm opacity-80">Print your coupons and open a little surprise.</p>
+            <p className="text-sm opacity-80">Print your coupon and enjoy the adventure.</p>
           </Card>
         </div>
       </div>

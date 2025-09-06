@@ -28,6 +28,11 @@ export const PERSON = {
     "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899452/56f86152-ab4d-4bec-ba3f-4576f5fa931a_1-min_z0rfa5.png",
     "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899451/IMG_1201_1-min_bkzrcd.png",
     "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899451/IMG_3369_2_1-min_diaxvw.png",
-    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899449/20250626_203401_F9AB90_1-min_uaoc5u.png"
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756899449/20250626_203401_F9AB90_1-min_uaoc5u.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756905322/IMG_5624_VSCO_1-min_lkssgj.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756905313/IMG_6782_1-min_e1bwgc.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756905308/IMG_6193_1-min_obtim9.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756905301/IMG_9775_2_1-min_yvznyp.png",
+    "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756905281/20250626_203401_F9AB90_1-min_1_nmpvsa.png"
   ],
 }
