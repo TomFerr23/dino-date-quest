@@ -55,6 +55,16 @@ export default function Gallery() {
   const headerRef = React.useRef<HTMLDivElement | null>(null)
   const [headerH, setHeaderH] = React.useState(0)
 
+  // ✅ keep original IMAGES, but allow appending uploads
+  const [images, setImages] = React.useState<string[]>(IMAGES)
+
+  // ⬇️ uploader modal state
+  const [open, setOpen] = React.useState(false)
+  const [pass, setPass] = React.useState('')
+  const [file, setFile] = React.useState<File | null>(null)
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
   React.useEffect(() => {
     const measure = () => setHeaderH(headerRef.current?.offsetHeight ?? 0)
     measure()
@@ -74,6 +84,58 @@ export default function Gallery() {
     const t = setTimeout(() => setPhase('grid'), 2800) // ~2.8s
     return () => clearTimeout(t)
   }, [phase])
+
+  async function onUpload() {
+    if (!file) {
+      setError('Pick a photo first.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      // 1) ask our API for a signed payload (password-protected)
+      const signRes = await fetch('/api/cloudinary-sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pass, folder: 'gallery' }),
+      })
+      if (!signRes.ok) {
+        const j = await signRes.json().catch(() => ({}))
+        throw new Error(j.error || 'Invalid password or sign error')
+      }
+      const { cloudName, apiKey, timestamp, folder, signature } = await signRes.json()
+
+      // 2) upload directly to Cloudinary
+      const form = new FormData()
+      form.append('file', file)
+      form.append('api_key', apiKey)
+      form.append('timestamp', String(timestamp))
+      form.append('folder', folder)
+      form.append('signature', signature)
+
+      const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: form,
+      })
+      if (!upRes.ok) {
+        const j = await upRes.json().catch(() => ({}))
+        throw new Error(j.error?.message || 'Upload failed')
+      }
+      const uploaded = await upRes.json()
+
+      // 3) show immediately
+      setImages((arr) => [uploaded.secure_url as string, ...arr])
+
+      // reset modal
+      setFile(null)
+      setPass('')
+      setOpen(false)
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="min-h-screen w-full relative px-4 pt-6 pb-14">
@@ -98,14 +160,14 @@ export default function Gallery() {
           {phase === 'intro' ? (
             <IntroCircle
               key="intro"
-              images={IMAGES}
+              images={images}
               topOffset={headerH + 12}
               onDone={() => setPhase('grid')}
             />
           ) : (
             <GridStage
               key="grid"
-              images={IMAGES}
+              images={images}
               topPadding={headerH + 12}
               onPhotoClick={setSelected}
             />
@@ -135,6 +197,94 @@ export default function Gallery() {
               <button onClick={() => setSelected(null)} className="absolute -top-3 -right-3 bg-white rounded-full px-3 py-1 shadow-soft text-sm">
                 Close ✕
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ⬇️ Floating “Add photo” button (opens password + upload modal) */}
+      <div className="fixed right-4 bottom-4 z-40">
+        <button
+          onClick={() => setOpen(true)}
+          className="px-5 py-3 rounded-2xl bg-dino text-white shadow-lg active:scale-95 transition"
+        >
+          + Add photo
+        </button>
+      </div>
+
+      {/* Upload Modal */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !busy && setOpen(false)}
+          >
+            <motion.div
+              initial={{ y: 20, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.98 }}
+              className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold">Upload a photo</h3>
+              <p className="text-sm opacity-70 mt-1">Enter the password and pick an image (JPG/PNG).</p>
+
+              <div className="mt-4 grid gap-3">
+                <div>
+                  <label className="text-xs opacity-70">Password</label>
+                  <input
+                    type="password"
+                    value={pass}
+                    onChange={(e) => setPass(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-black/15 px-3 py-2"
+                    placeholder="••••••••"
+                    disabled={busy}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs opacity-70">Image file</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="mt-1 block w-full text-sm"
+                    disabled={busy}
+                  />
+                </div>
+
+                {file && (
+                  <div className="mt-1 rounded-xl border border-black/10 overflow-hidden">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt="preview"
+                      className="w-full h-48 object-cover"
+                    />
+                  </div>
+                )}
+
+                {error && <div className="text-sm text-red-600">{error}</div>}
+
+                <div className="mt-2 flex gap-2 justify-end">
+                  <button
+                    className="px-4 py-2 rounded-xl bg-black/70 text-white"
+                    onClick={() => setOpen(false)}
+                    disabled={busy}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded-xl bg-dino text-white disabled:opacity-60"
+                    onClick={onUpload}
+                    disabled={busy || !pass || !file}
+                  >
+                    {busy ? 'Uploading…' : 'Upload'}
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -181,19 +331,16 @@ function IntroCircle({
         const x = cx + R * Math.cos(rad)
         const y = cy + R * Math.sin(rad)
 
-        // size buckets — same feel as before
         const sizes = [
           { w: 160, h: 190 }, { w: 175, h: 175 }, { w: 180, h: 160 }, { w: 168, h: 186 },
         ]
         const size = sizes[i % sizes.length]
-
-        // tiny deterministic tilt
-        const tilt = (Math.round((prand(i) - 0.5) * 22) / 10) // ~ -1.1..+1.1 deg
+        const tilt = (Math.round((prand(i) - 0.5) * 22) / 10)
 
         return (
           <motion.div
             key={src}
-            layoutId={`img-${i}`} // shared for morph to grid
+            layoutId={`img-${i}`}
             className="absolute"
             initial={{ opacity: 0, x: 120, y: 0, rotate: 4 }}
             animate={{ opacity: 1, x: 0, y: 0, rotate: 0 }}
@@ -208,7 +355,7 @@ function IntroCircle({
   )
 }
 
-/* ---------------- Grid (final): fully visible rows, lively misalignment via tiny tilt/jitter ---------------- */
+/* ---------------- Grid (final) ---------------- */
 
 function GridStage({
   images, topPadding, onPhotoClick,
@@ -227,7 +374,6 @@ function GridStage({
     return () => window.removeEventListener('resize', set)
   }, [])
 
-  // keep grid comfortably in view; page can scroll if needed (lots of photos)
   return (
     <motion.div
       className="w-full"
@@ -247,13 +393,13 @@ function GridStage({
               { w: 220, h: 240 }, { w: 230, h: 210 }, { w: 220, h: 220 }, { w: 240, h: 220 }, { w: 210, h: 230 },
             ]
             const size = buckets[i % buckets.length]
-            const yJitter = Math.round((prand(i + 12) - 0.5) * 12) // -6..+6px
-            const tilt = Math.round((prand(i) - 0.5) * 22) / 10 // ~ -1.1..+1.1deg
+            const yJitter = Math.round((prand(i + 12) - 0.5) * 12)
+            const tilt = Math.round((prand(i) - 0.5) * 22) / 10
 
             return (
               <motion.button
                 key={src}
-                layoutId={`img-${i}`} // morph from circle pos
+                layoutId={`img-${i}`}
                 onClick={() => onPhotoClick(src)}
                 initial={{ opacity: 0, x: 24, rotate: 2 }}
                 animate={{ opacity: 1, x: 0, rotate: tilt }}
@@ -273,7 +419,7 @@ function GridStage({
   )
 }
 
-/* ---------------- Polaroid (styled exactly like your reference) ---------------- */
+/* ---------------- Polaroid ---------------- */
 
 function Polaroid({
   src,
@@ -288,12 +434,11 @@ function Polaroid({
   outerTilt?: number
   onClick?: () => void
 }) {
-  // slight deterministic tilt like your sample
   const tilt = React.useMemo(() => {
     let h = 0
     for (let i = 0; i < src.length; i++) h = ((h << 5) - h) + src.charCodeAt(i)
-    const r = ((h % 7) + 7) % 7 // 0..6
-    return (r - 3) * 1.8 // -5.4..+5.4 deg
+    const r = ((h % 7) + 7) % 7
+    return (r - 3) * 1.8
   }, [src])
 
   return (
@@ -303,15 +448,13 @@ function Polaroid({
       style={{ width: size.w, height: size.h }}
       aria-label={`Open Memory #${index + 1}`}
     >
-      {/* Frame: white card with padding and bottom lip space */}
       <div
         className="w-full h-full bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-black/10 p-2 pb-6 transition-transform duration-200 group-hover:-translate-y-1"
         style={{ rotate: `${outerTilt || tilt}deg` }}
       >
-        {/* Photo fills remaining height above the lip */}
         <div
           className="w-full rounded-md overflow-hidden"
-          style={{ height: 'calc(100% - 1.5rem)' /* 1.5rem = pb-6 lip space */ }}
+          style={{ height: 'calc(100% - 1.5rem)' }}
         >
           <img
             src={src}
@@ -320,14 +463,10 @@ function Polaroid({
             loading="lazy"
           />
         </div>
-
-        {/* Lip caption (like your example, but with Memory #N) */}
         <div className="absolute left-1/2 -translate-x-1/2 bottom-1 text-[10px] tracking-wide uppercase opacity-60">
           Memory #{index + 1}
         </div>
       </div>
-
-      {/* Hover focus ring */}
       <div className="pointer-events-none absolute inset-0 rounded-xl ring-0 group-hover:ring-2 ring-dino/50 transition" />
     </button>
   )

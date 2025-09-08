@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.15.2",
+    "cloudinary": "^2.7.0",
     "framer-motion": "^11.0.0",
     "react": "^18.3.1",
     "react-confetti": "^6.1.0",
