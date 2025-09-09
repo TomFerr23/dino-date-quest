@@ -43,6 +43,26 @@ const IMAGES: string[] = [
   "https://res.cloudinary.com/dwxa3tffm/image/upload/v1756904401/20250627_172253_F5A563_1-min_vnlns7.png",
 ]
 
+async function getSignature(password: string, folder = "gallery") {
+  const r = await fetch("/api/cloudinary-sign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: password.trim(), folder }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(data?.error || "sign_failed");
+  }
+  return data as {
+    cloudName: string;
+    apiKey: string;
+    folder: string;
+    timestamp: number;
+    signature: string;
+  };
+}
+
+
 // util: deterministic small random for tilt/jitter
 function prand(i: number, seed = 1337) {
   let x = Math.sin(i * 999 + seed) * 10000
@@ -86,56 +106,44 @@ export default function Gallery() {
   }, [phase])
 
   async function onUpload() {
-    if (!file) {
-      setError('Pick a photo first.')
-      return
-    }
-    setBusy(true)
-    setError(null)
-    try {
-      // 1) ask our API for a signed payload (password-protected)
-      const signRes = await fetch('/api/cloudinary-sign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pass, folder: 'gallery' }),
-      })
-      if (!signRes.ok) {
-        const j = await signRes.json().catch(() => ({}))
-        throw new Error(j.error || 'Invalid password or sign error')
-      }
-      const { cloudName, apiKey, timestamp, folder, signature } = await signRes.json()
-
-      // 2) upload directly to Cloudinary
-      const form = new FormData()
-      form.append('file', file)
-      form.append('api_key', apiKey)
-      form.append('timestamp', String(timestamp))
-      form.append('folder', folder)
-      form.append('signature', signature)
-
-      const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: form,
-      })
-      if (!upRes.ok) {
-        const j = await upRes.json().catch(() => ({}))
-        throw new Error(j.error?.message || 'Upload failed')
-      }
-      const uploaded = await upRes.json()
-
-      // 3) show immediately
-      setImages((arr) => [uploaded.secure_url as string, ...arr])
-
-      // reset modal
-      setFile(null)
-      setPass('')
-      setOpen(false)
-    } catch (e: any) {
-      setError(e.message || 'Something went wrong')
-    } finally {
-      setBusy(false)
-    }
+  if (!file) {
+    setError("Pick a photo first.");
+    return;
   }
+  setBusy(true);
+  setError(null);
+  try {
+    // 1) get signed payload (password-protected)
+    const { cloudName, apiKey, timestamp, folder, signature } = await getSignature(pass, "gallery");
+
+    // 2) upload to Cloudinary
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("api_key", apiKey);
+    fd.append("timestamp", String(timestamp));
+    fd.append("folder", folder);
+    fd.append("signature", signature);
+
+    const upload = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: fd,
+    });
+
+    const upJson = await upload.json();
+    if (!upload.ok) throw new Error(upJson?.error?.message || "upload_failed");
+
+    // 3) success → prepend to gallery and close
+    setImages((prev) => [upJson.secure_url as string, ...prev]);
+    setFile(null);
+    setPass("");
+    setOpen(false);
+  } catch (e: any) {
+    setError(e?.message || "Upload failed");
+  } finally {
+    setBusy(false);
+  }
+}
+
 
   return (
     <div className="min-h-screen w-full relative px-4 pt-6 pb-14">
