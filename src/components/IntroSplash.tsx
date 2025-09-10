@@ -217,7 +217,7 @@ export default function IntroSplash({ onDone }: Props) {
                 Welcome {PERSON.nickname || PERSON.name}. Please refrain from feeding the dinosaurs.
               </p>
               <p className="text-xs md:text-sm opacity-60">
-                5 tiny trials. Immense bragging rights. 🦖
+                3 tiny trials. Immense bragging rights. 🦖
               </p>
               <button
                 onClick={onDone}
