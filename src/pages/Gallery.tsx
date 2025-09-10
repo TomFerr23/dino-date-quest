@@ -78,6 +78,29 @@ export default function Gallery() {
   // ✅ keep original IMAGES, but allow appending uploads
   const [images, setImages] = React.useState<string[]>(IMAGES)
 
+  // Fetch latest images from Cloudinary folder on mount
+React.useEffect(() => {
+  let cancelled = false;
+
+  (async () => {
+    try {
+      const r = await fetch('/api/cloudinary-list?folder=gallery');
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || 'list_failed');
+
+      // Merge with seeded IMAGES (avoid dupes)
+      const merged = Array.from(new Set([...(j.urls || []), ...IMAGES]));
+      if (!cancelled) setImages(merged);
+    } catch (e) {
+      // soft-fail: keep seeded IMAGES
+      console.warn('list_failed', e);
+    }
+  })();
+
+  return () => { cancelled = true; };
+}, []);
+
+
   // ⬇️ uploader modal state
   const [open, setOpen] = React.useState(false)
   const [pass, setPass] = React.useState('')
@@ -133,15 +156,25 @@ export default function Gallery() {
     if (!upload.ok) throw new Error(upJson?.error?.message || "upload_failed");
 
     // 3) success → prepend to gallery and close
-    setImages((prev) => [upJson.secure_url as string, ...prev]);
-    setFile(null);
-    setPass("");
-    setOpen(false);
-  } catch (e: any) {
-    setError(e?.message || "Upload failed");
-  } finally {
-    setBusy(false);
-  }
+setImages((prev) => [upJson.secure_url as string, ...prev]);
+setFile(null);
+setPass("");
+setOpen(false);
+
+// ⬇️ stash uploaded image in localStorage
+try {
+  const stored = JSON.parse(localStorage.getItem('gallery_uploaded') || '[]');
+  localStorage.setItem(
+    'gallery_uploaded',
+    JSON.stringify([upJson.secure_url as string, ...stored])
+  );
+} catch {}
+} catch (e: any) {
+  setError(e?.message || "Upload failed");
+} finally {
+  setBusy(false);
+}
+
 }
 
 
